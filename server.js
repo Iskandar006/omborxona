@@ -1,27 +1,37 @@
-const express = require('express');
-const cors = require('cors');
+const express = require("express");
+const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
-const port = 5000;
-
-// CORS yordamida React frontend bilan bog'lanishga ruxsat beramiz
+app.use(express.json());
 app.use(cors());
 
-// Body parsing uchun middleware
-app.use(express.json());
+const FILE = "products.json";
 
-// API endpoint: Bu endpoint React ilovasidan ma'lumotlarni olish uchun ishlatiladi
-app.get('/api', (req, res) => {
-  res.json({ message: "Hello from the backend!" });
+// Barcha mahsulotlarni olish
+app.get("/api", (req, res) => {
+  const data = JSON.parse(fs.readFileSync(FILE));
+  res.json(data);
 });
 
-// POST endpoint (ma'lumot yuborish uchun)
-app.post('/api', (req, res) => {
-  const { data } = req.body;
-  res.json({ message: `Received data: ${data}` });
+// Yangi mahsulot qo‘shish
+app.post("/api", (req, res) => {
+  const data = JSON.parse(fs.readFileSync(FILE));
+  const newProduct = {
+    id: data.length ? data[data.length - 1].id + 1 : 1,
+    ...req.body,
+  };
+  data.push(newProduct);
+  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+  res.json(newProduct);
 });
 
-// Serverni ishga tushurish
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+// Mahsulotni o‘chirish
+app.delete("/api/:id", (req, res) => {
+  let data = JSON.parse(fs.readFileSync(FILE));
+  data = data.filter((product) => product.id !== parseInt(req.params.id));
+  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+  res.json({ message: "O‘chirildi!" });
 });
+
+app.listen(5000, () => console.log("Server 5000-portda ishlayapti"));
